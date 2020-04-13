@@ -151,7 +151,7 @@ function init() {
         }
     )
 
-    var spriteMap = new THREE.TextureLoader().load("../images/cloud.png");
+    var spriteMap = new THREE.TextureLoader().load("images/cloud.png");
     var spriteMaterial = new THREE.SpriteMaterial({ map: spriteMap, transparent: true, alphaTest: 0.1, side: THREE.DoubleSide });
     var sprite = new THREE.Sprite(spriteMaterial);
     sprite.scale.set(2, 1, 1)
@@ -160,7 +160,7 @@ function init() {
     scene.add(sprite);
 
     var gltf_loader = new GLTFLoader();
-    gltf_loader.load("../3d_models/satellite_1.glb",
+    gltf_loader.load("3d_models/satellite_1.glb",
         function (gltf) {
             var plane = gltf.scene;
             plane.position.set(0, earthRadius + 4, 2)
@@ -176,7 +176,7 @@ function init() {
     )
 
     var gltf_loader_airplane = new GLTFLoader();
-    gltf_loader_airplane.load("../3d_models/boeing787_8.glb",
+    gltf_loader_airplane.load("3d_models/boeing787_8.glb",
         function (gltf) {
             var plane = gltf.scene;
             plane.position.set(0, earthRadius + 7, 2)
@@ -269,7 +269,7 @@ let altLoc = [2, 4, 6, 8]
 
 function addAltitudeLabels(){
     var loader = new THREE.FontLoader();
-    loader.load('../styles/Zawgyi-One_Regular.json', function(font) {
+    loader.load('styles/Zawgyi-One_Regular.json', function(font) {
         // label_font = font;
 
         var color = 0xff0000;
