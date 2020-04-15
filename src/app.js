@@ -121,7 +121,7 @@ function init() {
     earth.position.set(0, 0, 0);
     // earth.rotateX(.5)
     // earth.rotateX(Math.PI / 2)
-    
+
     scene.add(earth);
 
     // create custom material from the shader code above
@@ -152,11 +152,11 @@ function init() {
         function (texture) {
             earthMaterial.map = texture;
             earthMaterial.needsUpdate = true;
-            
+
             isCloudLoaded = true;
             render();
-            
-            if(isSatelliteLoaded && isPlaneLoaded){
+
+            if (isSatelliteLoaded && isPlaneLoaded) {
                 animate();
             }
         },
@@ -187,7 +187,7 @@ function init() {
 
             isSatelliteLoaded = true;
 
-            if(isCloudLoaded && isPlaneLoaded){
+            if (isCloudLoaded && isPlaneLoaded) {
                 animate();
             }
         }, undefined,
@@ -210,7 +210,7 @@ function init() {
 
             isPlaneLoaded = true;
 
-            if(isCloudLoaded && isSatelliteLoaded){
+            if (isCloudLoaded && isSatelliteLoaded) {
                 animate();
             }
         }, undefined,
@@ -221,7 +221,7 @@ function init() {
 
     // var loader = new STLLoader();
     // loader.load("../3d_models/Block_Island_08152013.stl", function (geometry) {
-        
+
     //     var mat = new THREE.MeshLambertMaterial({ color: 0x444444 });
     //     var meteor = new THREE.Mesh(geometry, mat);
     //     meteor.position.set(0, earthRadius + 9, 2)
@@ -236,8 +236,31 @@ function init() {
     orbit.target = new THREE.Vector3(0, earthRadius + 3, 0);
     orbit.update();
 
-    // altitudeMeter = new THREE
+    // Ozone Layer
+    var material_ozone = new THREE.ShaderMaterial(
+        {
+            uniforms:
+            {
+                "c": { type: "f", value: .1 },
+                "p": { type: "f", value: 3},
+                glowColor: { type: "c", value: new THREE.Color(0x413ee0) },
+                viewVector: { type: "v3", value: camera.position }
+            },
+            vertexShader: document.getElementById('vertexShader').textContent,
+            fragmentShader: document.getElementById('fragmentShader').textContent,
+            side: THREE.BackSide,
+            blending: THREE.AdditiveBlending,
+            transparent: true,
+            opacity: .2
+        });
 
+
+    var geo_ozone = new THREE.TorusGeometry(earthRadius + 3.4, .2, 16, 100)
+    // var geo_ozone = new THREE.SphereBufferGeometry(earthRadius + 4, 100, 100)
+    var ozone_layer = new THREE.Mesh(geo_ozone, material_ozone);
+
+    scene.add(ozone_layer);
+    
     addAltitudeLabels();
     addLayerLabels();
     render();
@@ -260,7 +283,7 @@ var angForPlane;
 var angForPlane1;
 var lastElapsed = 0;
 var delta;
-var planeRotationAxis = new THREE.Vector3(0,  3, -1).normalize()
+var planeRotationAxis = new THREE.Vector3(0, 3, -1).normalize()
 var xForPlane, yForPlane, xForCloud, yForCloud;
 var xForSat, yForSat;
 const time_to_orbit_cloud = 10;
@@ -270,19 +293,19 @@ var turn, time_for_cloud, angle_for_cloud;
 
 
 function animate() {
-    
+
     requestAnimationFrame(animate);
 
     elapsed = clock.getElapsedTime();
 
-    
+
     angForPlane = ((elapsed - lastElapsed) / time_to_orbit_plane) * twoPI;
     angForPlane1 = (elapsed / time_to_orbit_plane) * twoPI;
-    
+
     plane.rotateX(angForPlane)
 
-    plane.position.x = Math.cos(angForPlane1) * (earthRadius + 2.5);
-    plane.position.y = Math.sin(angForPlane1) * (earthRadius + 2.5);
+    plane.position.x = Math.cos(angForPlane1) * (earthRadius + 2.2);
+    plane.position.y = Math.sin(angForPlane1) * (earthRadius + 2.2);
     plane.position.z = 1;
 
     satellite.rotateX(angForPlane)
@@ -292,7 +315,7 @@ function animate() {
     satellite.position.z = 1;
 
     // earth.rotation.y = -angForPlane1 / 4;
-    earth.rotateOnWorldAxis( planeRotationAxis, angForPlane / 6)
+    earth.rotateOnWorldAxis(planeRotationAxis, angForPlane / 6)
 
     // cloud
 
@@ -341,9 +364,9 @@ function addLayer(mesh, innerRadius, outerRadius, color) {
 let altLabels = ["~ ၁၃ ကီလုိမီတာ", "~ ၅၀ ကီလုိမီတာ", "~ ၈၀ - ၈၅ ကီလုိမီတာ", "~ ၅၀၀- ၆၀၀ ကီလုိမီတာ"]
 let altLoc = [2, 4, 6, 8]
 
-function addAltitudeLabels(){
+function addAltitudeLabels() {
     var loader = new THREE.FontLoader();
-    loader.load('styles/Zawgyi-One_Regular.json', function(font) {
+    loader.load('styles/Zawgyi-One_Regular.json', function (font) {
 
         var color = 0x779efb;
 
@@ -354,41 +377,41 @@ function addAltitudeLabels(){
             side: THREE.DoubleSide
         });
 
-        for(var i = 0; i < altLabels.length; i++){
+        for (var i = 0; i < altLabels.length; i++) {
             var message = altLabels[i];
 
             var shapes = font.generateShapes(message, .3);
-    
+
             var geometry = new THREE.ShapeBufferGeometry(shapes);
-    
+
             geometry.computeBoundingBox();
-    
+
             var xMid = - (geometry.boundingBox.max.x - geometry.boundingBox.min.x);
-    
-            geometry.translate(xMid / 2, -.2, 0);    
+
+            geometry.translate(xMid / 2, -.2, 0);
 
             var text_alt = new THREE.Mesh(geometry, matLite);
-            
-            text_alt.rotateZ( .4);
-            
-            
+
+            text_alt.rotateZ(.4);
+
+
             var x = Math.cos(Math.PI / 2 + .3);
             var y = Math.sin(Math.PI / 2 + .3);
             text_alt.position.y = y * (earthRadius + altLoc[i]);
             text_alt.position.x = x * (earthRadius + altLoc[i]);
             text_alt.position.z = .1;
-            
+
             scene.add(text_alt);
         }
     })
 }
 
 let layerLabels = ["ထရိုပိုစဖီးယား", "အိုဇုန္းလႊာ", "စတရာတိုစဖီးယား", "မီဆိုစဖီးယား", "သာမိုစဖီးယား", "အိပ္ဇိုစဖီးယား"]
-let layerLoc = [1, 2.5, 3.3, 5, 7, 9]
+let layerLoc = [1, 3.3, 2.5, 5, 7, 9]
 
-function addLayerLabels(){
+function addLayerLabels() {
     var loader = new THREE.FontLoader();
-    loader.load('styles/Zawgyi-One_Regular.json', function(font) {
+    loader.load('styles/Zawgyi-One_Regular.json', function (font) {
 
         var color = 0x70c409;
 
@@ -399,21 +422,21 @@ function addLayerLabels(){
             side: THREE.DoubleSide
         });
 
-        for(var i = 0; i < layerLabels.length; i++){
+        for (var i = 0; i < layerLabels.length; i++) {
             var message = layerLabels[i];
 
             var shapes = font.generateShapes(message, .3);
-    
+
             var geometry = new THREE.ShapeBufferGeometry(shapes);
             geometry.computeBoundingBox();
-    
+
             var text_alt = new THREE.Mesh(geometry, matLite);
 
             var xMid = - (geometry.boundingBox.max.x - geometry.boundingBox.min.x);
             geometry.translate(xMid / 2, -.1, 0);
 
             text_alt.rotateZ(- .4);
-            
+
             var x = Math.cos(Math.PI / 2 - .3);
             var y = Math.sin(Math.PI / 2 - .3);
             text_alt.position.y = y * (earthRadius + layerLoc[i]);
