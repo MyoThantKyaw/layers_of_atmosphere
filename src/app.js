@@ -18,6 +18,7 @@ var isCloudLoaded = false;
 var isPlaneLoaded = false;
 var isSatelliteLoaded = false;
 var earth;
+var cloud;
 
 let altitudeMeter;
 var clipPlanes = [
@@ -165,13 +166,13 @@ function init() {
         }
     )
 
-    var spriteMap = new THREE.TextureLoader().load("images/cloud.png");
-    var spriteMaterial = new THREE.SpriteMaterial({ map: spriteMap, transparent: true, alphaTest: 0.1, side: THREE.DoubleSide });
-    var sprite = new THREE.Sprite(spriteMaterial);
-    sprite.scale.set(2, 1, 1)
-    sprite.position.set(0, earthRadius + 1, 1)
+    var cloudMap = new THREE.TextureLoader().load("images/cloud.png");
+    var cloudMaterial = new THREE.SpriteMaterial({ map: cloudMap, transparent: true, alphaTest: 0.1, side: THREE.DoubleSide });
+    cloud = new THREE.Sprite(cloudMaterial);
+    cloud.scale.set(2, 1, 1)
+    cloud.position.set(0, earthRadius + 1, 1)
 
-    scene.add(sprite);
+    scene.add(cloud);
 
     var gltf_loader = new GLTFLoader();
     gltf_loader.load("3d_models/satellite_1.glb",
@@ -260,8 +261,13 @@ var angForPlane1;
 var lastElapsed = 0;
 var delta;
 var planeRotationAxis = new THREE.Vector3(0,  3, -1).normalize()
-var xForPlane, yForPlane;
+var xForPlane, yForPlane, xForCloud, yForCloud;
 var xForSat, yForSat;
+const time_to_orbit_cloud = 10;
+const angle_deviation = Math.PI / 4;
+const angle_start_cloud = Math.PI / 2 - (angle_deviation / 2)
+var turn, time_for_cloud, angle_for_cloud;
+
 
 function animate() {
     
@@ -269,31 +275,34 @@ function animate() {
 
     elapsed = clock.getElapsedTime();
 
-    delta = elapsed - lastElapsed;
     
-    angForPlane = (delta / time_to_orbit_plane) * twoPI;
+    angForPlane = ((elapsed - lastElapsed) / time_to_orbit_plane) * twoPI;
     angForPlane1 = (elapsed / time_to_orbit_plane) * twoPI;
-
-    xForPlane = Math.cos(angForPlane1);
-    yForPlane = Math.sin(angForPlane1);
     
     plane.rotateX(angForPlane)
 
-    plane.position.x = xForPlane * (earthRadius + 2.5);
-    plane.position.y = yForPlane * (earthRadius + 2.5);
+    plane.position.x = Math.cos(angForPlane1) * (earthRadius + 2.5);
+    plane.position.y = Math.sin(angForPlane1) * (earthRadius + 2.5);
     plane.position.z = 1;
-
-    xForSat = Math.cos(angForPlane1 - 2.2);
-    yForSat = Math.sin(angForPlane1 - 2.2);
 
     satellite.rotateX(angForPlane)
 
-    satellite.position.x = xForSat * (earthRadius + 5);
-    satellite.position.y = yForSat * (earthRadius + 5);
+    satellite.position.x = Math.cos(angForPlane1 - 2.2) * (earthRadius + 5);
+    satellite.position.y = Math.sin(angForPlane1 - 2.2) * (earthRadius + 5);
     satellite.position.z = 1;
 
     // earth.rotation.y = -angForPlane1 / 4;
     earth.rotateOnWorldAxis( planeRotationAxis, angForPlane / 6)
+
+    // cloud
+
+    time_for_cloud = (elapsed % time_to_orbit_cloud)
+    turn = parseInt(elapsed / time_to_orbit_cloud) % 2;
+
+    angle_for_cloud = angle_start_cloud + ((angle_deviation) * (((time_for_cloud) * turn + (time_to_orbit_cloud - time_for_cloud) * (1 - turn)) / time_to_orbit_cloud));
+
+    cloud.position.x = Math.cos(angle_for_cloud) * (earthRadius + .8);;
+    cloud.position.y = Math.sin(angle_for_cloud) * (earthRadius + .8);;
 
     lastElapsed = elapsed;
     render();
