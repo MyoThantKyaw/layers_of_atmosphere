@@ -1,11 +1,12 @@
 var THREE = require("three");
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { GLTFLoader, GLTFParser } from 'three/examples/jsm/loaders/GLTFLoader';
-import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import {setupScene} from "./gallery.js"
+// import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
 
-import { Mesh, Sphere, RedIntegerFormat } from 'three';
+// import { Mesh, Sphere, RedIntegerFormat } from 'three';
 
-var scene, camera, renderer, orbit;
+let scene, camera, renderer, orbit, meteoridLightRay;
 var perspective_camera;
 var ball;
 var pointLight;
@@ -13,12 +14,14 @@ var toposphere;
 let layers = []
 const earthRadius = 10;
 const twoPI = Math.PI * 2;
-var plane, satellite;
+var plane, planeClone, satellite, meteorid;
 var isCloudLoaded = false;
 var isPlaneLoaded = false;
+var isMeteoridLoaded = false;
 var isSatelliteLoaded = false;
 var earth;
 var cloud;
+
 
 let altitudeMeter;
 var clipPlanes = [
@@ -43,7 +46,7 @@ function init() {
 
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.canvas = view_3d;
-    renderer.localClippingEnabled = true;
+    // renderer.localClippingEnabled = true;
 
     renderer.setSize(position_info.width, position_info.height);
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -65,7 +68,7 @@ function init() {
     scene = new THREE.Scene();
 
     orbit = new OrbitControls(camera, renderer.domElement);
-    orbit.addEventListener("change", render)
+    // orbit.addEventListener("change", render)
     orbit.saveState();
     // orbit.enableDamping = true;
     // orbit.dampingFactor = .18;
@@ -156,7 +159,7 @@ function init() {
             isCloudLoaded = true;
             render();
 
-            if (isSatelliteLoaded && isPlaneLoaded) {
+            if (isSatelliteLoaded && isPlaneLoaded && isMeteoridLoaded) {
                 animate();
             }
         },
@@ -187,7 +190,7 @@ function init() {
 
             isSatelliteLoaded = true;
 
-            if (isCloudLoaded && isPlaneLoaded) {
+            if (isCloudLoaded && isPlaneLoaded && isMeteoridLoaded) {
                 animate();
             }
         }, undefined,
@@ -200,6 +203,7 @@ function init() {
     gltf_loader_airplane.load("3d_models/B_787_8.glb",
         function (gltf) {
             plane = gltf.scene;
+            planeClone = plane.clone();
             plane.position.set(0, earthRadius + 7, 0)
             plane.scale.set(.9, .9, .9)
             plane.rotation.y = -(Math.PI / 2)
@@ -210,7 +214,7 @@ function init() {
 
             isPlaneLoaded = true;
 
-            if (isCloudLoaded && isSatelliteLoaded) {
+            if (isCloudLoaded && isSatelliteLoaded && isMeteoridLoaded) {
                 animate();
             }
         }, undefined,
@@ -219,21 +223,56 @@ function init() {
         }
     )
 
-    // var loader = new STLLoader();
-    // loader.load("../3d_models/Block_Island_08152013.stl", function (geometry) {
+    var gltf_loader_meteorid = new GLTFLoader();
+    gltf_loader_meteorid.load("3d_models/Eros_1_10.glb",
+        function (gltf) {
+            meteorid = gltf.scene;
+            meteorid.position.set(0, earthRadius + 12, 0);
+            meteorid.scale.set(.0003, .0003, .0003);
+            // meteorid.rotation.y = -(Math.PI / 2);
+            meteorid.rotation.z = -.1;
+            meteorid.rotateX(-Math.PI / 2);
+            
+            scene.add(meteorid);
 
-    //     var mat = new THREE.MeshLambertMaterial({ color: 0x444444 });
-    //     var meteor = new THREE.Mesh(geometry, mat);
-    //     meteor.position.set(0, earthRadius + 9, 2)
-    //     meteor.scale.set(0.008, 0.008, 0.008);
-    //     scene.add(meteor);
-    // });
+            var geometryTail = new THREE.CylinderGeometry(.26, .11, 4, 32 * 2, 20, true);
+            geometryTail.translate(0, .4, 0)
+            geometryTail.applyMatrix4(new THREE.Matrix4().makeTranslation(0, -geometryTail.parameters.height / 2, 0));
+            geometryTail.applyMatrix4(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
+            
+
+            var materialTail = new THREEx.VolumetricSpotLightMaterial();
+            // materialTail.alphaTest = 0
+
+            meteoridLightRay = new THREE.Mesh(geometryTail, materialTail);
+            meteoridLightRay.position.set(earthRadius + 2, 2, 2)
+        
+            // light_ray.lookAt(fl_target_loc)
+            materialTail.uniforms.lightColor.value.set('white')
+            materialTail.uniforms.spotPosition.value = meteoridLightRay.position
+            scene.add(meteoridLightRay);
+
+            render();
+
+            isMeteoridLoaded = true;
+
+            if (isCloudLoaded && isSatelliteLoaded && isPlaneLoaded) {
+                animate();
+            }
+        }, undefined,
+        function (err) {
+            console.error(err);
+        }
+    )
+
 
     var helpers = new THREE.Group();
     helpers.add(new THREE.PlaneHelper(clipPlanes[0], 100, 0xff0000));
 
     camera.position.set(0, earthRadius + 3, 25);
     orbit.target = new THREE.Vector3(0, earthRadius + 3, 0);
+    orbit.enableDamping = true;
+    orbit.dampingFactor = .1;
     orbit.update();
 
     // Ozone Layer
@@ -242,7 +281,7 @@ function init() {
             uniforms:
             {
                 "c": { type: "f", value: .1 },
-                "p": { type: "f", value: 3},
+                "p": { type: "f", value: 3 },
                 glowColor: { type: "c", value: new THREE.Color(0x413ee0) },
                 viewVector: { type: "v3", value: camera.position }
             },
@@ -255,12 +294,12 @@ function init() {
         });
 
 
-    var geo_ozone = new THREE.TorusGeometry(earthRadius + 3.4, .2, 16, 100)
+    var geo_ozone = new THREE.TorusBufferGeometry(earthRadius + 3.4, .2, 16, 100)
     // var geo_ozone = new THREE.SphereBufferGeometry(earthRadius + 4, 100, 100)
     var ozone_layer = new THREE.Mesh(geo_ozone, material_ozone);
 
     scene.add(ozone_layer);
-    
+
     addAltitudeLabels();
     addLayerLabels();
     render();
@@ -272,7 +311,7 @@ function render() {
     //     // layers[i].lookAt(camera.position)
     // }
 
-    // orbit.update();
+    orbit.update();
     renderer.render(scene, camera);
 }
 
@@ -288,16 +327,24 @@ var xForPlane, yForPlane, xForCloud, yForCloud;
 var xForSat, yForSat;
 const time_to_orbit_cloud = 10;
 const angle_deviation = Math.PI / 4;
-const angle_start_cloud = Math.PI / 2 - (angle_deviation / 2)
+const angle_start_cloud = Math.PI / 2 - (angle_deviation / 2);
 var turn, time_for_cloud, angle_for_cloud;
-
+const meteoridStartPt = new THREE.Vector3(-10, earthRadius + 6 , .5);
+const meteoridEndPt = new THREE.Vector3(10, earthRadius + 1 , .5);
+const timeTakenMeteorid = 1.5;
+var currentTimeMeteorid;
+var isPlaying = true;
 
 function animate() {
 
-    requestAnimationFrame(animate);
+    
+
+    if (isPlaying){
+        requestAnimationFrame(animate);
+    }
+    
 
     elapsed = clock.getElapsedTime();
-
 
     angForPlane = ((elapsed - lastElapsed) / time_to_orbit_plane) * twoPI;
     angForPlane1 = (elapsed / time_to_orbit_plane) * twoPI;
@@ -306,15 +353,14 @@ function animate() {
 
     plane.position.x = Math.cos(angForPlane1) * (earthRadius + 2.2);
     plane.position.y = Math.sin(angForPlane1) * (earthRadius + 2.2);
-    plane.position.z = 1;
-
-    satellite.rotateX(angForPlane)
+    // plane.position.z = 1;
 
     satellite.position.x = Math.cos(angForPlane1 - 2.2) * (earthRadius + 5);
     satellite.position.y = Math.sin(angForPlane1 - 2.2) * (earthRadius + 5);
-    satellite.position.z = 1;
+    // satellite.position.z = 1;
 
-    // earth.rotation.y = -angForPlane1 / 4;
+    // meteorid
+
     earth.rotateOnWorldAxis(planeRotationAxis, angForPlane / 6)
 
     // cloud
@@ -324,10 +370,21 @@ function animate() {
 
     angle_for_cloud = angle_start_cloud + ((angle_deviation) * (((time_for_cloud) * turn + (time_to_orbit_cloud - time_for_cloud) * (1 - turn)) / time_to_orbit_cloud));
 
-    cloud.position.x = Math.cos(angle_for_cloud) * (earthRadius + .8);;
-    cloud.position.y = Math.sin(angle_for_cloud) * (earthRadius + .8);;
+    cloud.position.x = Math.cos(angle_for_cloud) * (earthRadius + .8);
+    cloud.position.y = Math.sin(angle_for_cloud) * (earthRadius + .8);
+
+    // meteorid
+    currentTimeMeteorid = (elapsed % timeTakenMeteorid) / timeTakenMeteorid;
+
+    meteorid.position.x = (meteoridStartPt.x * (1 - currentTimeMeteorid)) + (meteoridEndPt.x * currentTimeMeteorid)
+    meteorid.position.y = (meteoridStartPt.y * (1 - currentTimeMeteorid)) + (meteoridEndPt.y * currentTimeMeteorid) 
+    meteorid.position.z = (meteoridStartPt.z * (1 - currentTimeMeteorid)) + (meteoridEndPt.z * currentTimeMeteorid) 
+    
+    meteoridLightRay.position.copy(meteorid.position)
+    meteoridLightRay.lookAt(meteoridStartPt)
 
     lastElapsed = elapsed;
+
     render();
 }
 
@@ -394,7 +451,6 @@ function addAltitudeLabels() {
 
             text_alt.rotateZ(.4);
 
-
             var x = Math.cos(Math.PI / 2 + .3);
             var y = Math.sin(Math.PI / 2 + .3);
             text_alt.position.y = y * (earthRadius + altLoc[i]);
@@ -448,4 +504,119 @@ function addLayerLabels() {
     })
 }
 
+
+
+var THREEx = THREEx || {}
+/**
+ * from http://stemkoski.blogspot.fr/2013/07/shaders-in-threejs-glow-and-halo.html
+ * @return {[type]} [description]
+ */
+THREEx.VolumetricSpotLightMaterial = function () {
+    // 
+    var vertexShader = [
+        'varying vec3 vNormal;',
+        'varying vec3 vWorldPosition;',
+
+        'void main(){',
+        '// compute intensity',
+        'vNormal		= normalize( normalMatrix * normal );',
+
+        'vec4 worldPosition	= modelMatrix * vec4( position, 1.0 );',
+        'vWorldPosition		= worldPosition.xyz;',
+
+        '// set gl_Position',
+        'gl_Position	= projectionMatrix * modelViewMatrix * vec4( position, 1.0 );',
+        '}',
+    ].join('\n')
+    var fragmentShader = [
+        'varying vec3		vNormal;',
+        'varying vec3		vWorldPosition;',
+
+        'uniform vec3		lightColor;',
+
+        'uniform vec3		spotPosition;',
+
+        'uniform float		attenuation;',
+        'uniform float		anglePower;',
+
+        'void main(){',
+        'float intensity;',
+
+        //////////////////////////////////////////////////////////
+        // distance attenuation					//
+        //////////////////////////////////////////////////////////
+        'intensity	= distance(vWorldPosition, spotPosition)/attenuation;',
+        'intensity	= 1.0 - clamp(intensity, 0.0, 1.0);',
+
+        //////////////////////////////////////////////////////////
+        // intensity on angle					//
+        //////////////////////////////////////////////////////////
+        'vec3 normal	= vec3(vNormal.x, vNormal.y, abs(vNormal.z));',
+        'float angleIntensity	= pow( dot(normal, vec3(0.0, 0.0, 1.0)), anglePower );',
+        'intensity	= intensity * angleIntensity;',
+        // 'gl_FragColor	= vec4( lightColor, intensity );',
+
+        //////////////////////////////////////////////////////////
+        // final color						//
+        //////////////////////////////////////////////////////////
+
+        // set the final color
+        'gl_FragColor	= vec4( lightColor, intensity);',
+        '}',
+    ].join('\n')
+
+    // create custom material from the shader code above
+    //   that is within specially labeled script tags
+    var material = new THREE.ShaderMaterial({
+        uniforms: {
+            attenuation: {
+                type: "f",
+                value: 4
+            },
+            anglePower: {
+                type: "f",
+                value: 2
+            },
+            spotPosition: {
+                type: "v3",
+                value: new THREE.Vector3(0, 0, 0)
+            },
+            lightColor: {
+                type: "c",
+                value: new THREE.Color('white')
+            },
+        },
+        vertexShader: vertexShader,
+        fragmentShader: fragmentShader,
+        // side		: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+        transparent: false,
+        depthWrite: false,
+        alphaTest : .1
+    });
+    return material;
+}
+
+function showModel(name, containerName){
+    isPlaying = false;
+
+    let model;
+    if (name == "airplane"){
+        model = planeClone;
+    }
+    else{
+
+    }
+
+    setupScene(containerName, model)
+
+    console.log("show modell");
+}
+
+function pauseAnimation(){
+
+}
+
 init()
+
+export { showModel }
