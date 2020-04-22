@@ -1,7 +1,7 @@
 var THREE = require("three");
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import {setupScene} from "./gallery.js"
+import {setupScene, showModel_, hideModel_, importModels} from "./gallery.js"
 // import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
 
 // import { Mesh, Sphere, RedIntegerFormat } from 'three';
@@ -191,7 +191,7 @@ function init() {
             isSatelliteLoaded = true;
 
             if (isCloudLoaded && isPlaneLoaded && isMeteoridLoaded) {
-                animate();
+                finishedLoadingModels()
             }
         }, undefined,
         function (err) {
@@ -215,7 +215,7 @@ function init() {
             isPlaneLoaded = true;
 
             if (isCloudLoaded && isSatelliteLoaded && isMeteoridLoaded) {
-                animate();
+                finishedLoadingModels()
             }
         }, undefined,
         function (err) {
@@ -257,7 +257,7 @@ function init() {
             isMeteoridLoaded = true;
 
             if (isCloudLoaded && isSatelliteLoaded && isPlaneLoaded) {
-                animate();
+                finishedLoadingModels()
             }
         }, undefined,
         function (err) {
@@ -276,42 +276,49 @@ function init() {
     orbit.update();
 
     // Ozone Layer
-    var material_ozone = new THREE.ShaderMaterial(
-        {
-            uniforms:
-            {
-                "c": { type: "f", value: .1 },
-                "p": { type: "f", value: 3 },
-                glowColor: { type: "c", value: new THREE.Color(0x413ee0) },
-                viewVector: { type: "v3", value: camera.position }
-            },
-            vertexShader: document.getElementById('vertexShader').textContent,
-            fragmentShader: document.getElementById('fragmentShader').textContent,
-            side: THREE.BackSide,
-            blending: THREE.AdditiveBlending,
-            transparent: true,
-            opacity: .2
-        });
+    // var material_ozone = new THREE.ShaderMaterial(
+    //     {
+    //         uniforms:
+    //         {
+    //             "c": { type: "f", value: .1 },
+    //             "p": { type: "f", value: 3 },
+    //             glowColor: { type: "c", value: new THREE.Color(0x413ee0) },
+    //             viewVector: { type: "v3", value: camera.position }
+    //         },
+    //         vertexShader: document.getElementById('vertexShader').textContent,
+    //         fragmentShader: document.getElementById('fragmentShader').textContent,
+    //         side: THREE.BackSide,
+    //         blending: THREE.AdditiveBlending,
+    //         transparent: true,
+    //         opacity: .2
+    //     });
 
 
-    var geo_ozone = new THREE.TorusBufferGeometry(earthRadius + 3.4, .2, 16, 100)
-    // var geo_ozone = new THREE.SphereBufferGeometry(earthRadius + 4, 100, 100)
-    var ozone_layer = new THREE.Mesh(geo_ozone, material_ozone);
+    // var geo_ozone = new THREE.TorusBufferGeometry(earthRadius + 3.4, .2, 16, 100)
+    // // var geo_ozone = new THREE.SphereBufferGeometry(earthRadius + 4, 100, 100)
+    // var ozone_layer = new THREE.Mesh(geo_ozone, material_ozone);
 
-    scene.add(ozone_layer);
+    // scene.add(ozone_layer);
 
     addAltitudeLabels();
     addLayerLabels();
     render();
 }
 
+function finishedLoadingModels(){
+    importModels([plane.clone(), satellite.clone(), meteorid.clone()])
+
+    isPlaying = true;
+    animate();
+}
+
 function render() {
-    // for(var i = 0; i < layers.length; i++){
-    //     // layers[i].material.uniforms.viewVector.value = new THREE.Vector3().subVectors(camera.position, layers[i].position);
-    //     // layers[i].lookAt(camera.position)
-    // }
 
     orbit.update();
+    renderer.render(scene, camera);
+}
+
+function renderForOrbit(){
     renderer.render(scene, camera);
 }
 
@@ -334,17 +341,19 @@ const meteoridEndPt = new THREE.Vector3(10, earthRadius + 1 , .5);
 const timeTakenMeteorid = 1.5;
 var currentTimeMeteorid;
 var isPlaying = true;
+var animationId;
+var elapsedOffset = 0;
 
 function animate() {
-
-    
-
     if (isPlaying){
-        requestAnimationFrame(animate);
+        animationId = requestAnimationFrame(animate);
+    }
+    else{
+        cancelAnimationFrame(animationId)
     }
     
-
-    elapsed = clock.getElapsedTime();
+    elapsed = elapsedOffset + clock.getElapsedTime();
+    
 
     angForPlane = ((elapsed - lastElapsed) / time_to_orbit_plane) * twoPI;
     angForPlane1 = (elapsed / time_to_orbit_plane) * twoPI;
@@ -597,26 +606,38 @@ THREEx.VolumetricSpotLightMaterial = function () {
     return material;
 }
 
-function showModel(name, containerName){
+function hideModel(){
+    hideModel_();
+    isPlaying = true;
+    animate();
+}
+
+// const modelKeys = ["airplane", "satellite", "meteoroid"]
+
+function showModel(modelIndex){
     isPlaying = false;
-
-    let model;
-    if (name == "airplane"){
-        model = planeClone;
-    }
-    else{
-
-    }
-
-    setupScene(containerName, model)
-
-    console.log("show modell");
+    showModel_(modelIndex)
 }
 
-function pauseAnimation(){
-
-}
 
 init()
 
-export { showModel }
+function play(){
+    orbit.removeEventListener("change", renderForOrbit)
+    isPlaying = true;
+    clock.start()
+    animate();
+
+    
+}
+
+function pause(){
+    isPlaying = false;
+    clock.stop();
+    elapsedOffset = elapsed;
+
+    orbit.addEventListener("change", renderForOrbit)
+}
+
+export { setupScene, showModel, hideModel, play, pause, isPlaying}
+

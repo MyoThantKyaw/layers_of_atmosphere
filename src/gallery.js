@@ -1,29 +1,32 @@
 let renderer, perspective_camera, camera, scene, orbit;
 var THREE = require("three");
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+var currentModelIndex = -1;
+var isModelRunning = false;
+let models;
+var model;
 
-
-function setupScene(containerName, model){
-
+function setupScene(containerName){
+    
     var view_3d = document.getElementById(containerName);
     
-
-    var width = view_3d.getBoundingClientRect().width;
+    var width = view_3d.getBoundingClientRect().width -10;
     
+    view_3d.style.width = width + "px";
     view_3d.style.height = (width * .8 ) + "px";
     var position_info = view_3d.getBoundingClientRect();
 
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.canvas = view_3d;
 
-
     renderer.setSize(position_info.width, position_info.height);
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setClearColor(0x222222);
     
+    view_3d.innerHTML = ""
     view_3d.appendChild(renderer.domElement);
 
-    perspective_camera = new THREE.PerspectiveCamera(45, position_info.width / position_info.height, 1, 1000);
+    perspective_camera = new THREE.PerspectiveCamera(45, position_info.width / position_info.height, .01, 1000);
 
     // var orthographicCamera = new THREE.OrthographicCamera(position_info.width / -2, position_info.width / 2, position_info.height / 2, position_info.height / -2, .01, 14000);
 
@@ -37,7 +40,7 @@ function setupScene(containerName, model){
     scene = new THREE.Scene();
 
     orbit = new OrbitControls(camera, renderer.domElement);
-    // orbit.addEventListener("change", render)
+    orbit.addEventListener("change", render)
     orbit.autoRotate = true;
     orbit.saveState();
 
@@ -64,23 +67,41 @@ function setupScene(containerName, model){
     // add model
     
     
-    model.position.set(.2, -.2, 0)
-    model.rotateY(-.2)
-    scene.add(model)
-
-    // scene.add(new THREE.AxesHelper(4))
-
-
-    console.log("here..")
-
-    animate();
-
-    
-    
 }
 
+function importModels(modelsCopy){
+    models = modelsCopy
+}
+
+function showModel_(modelIndex){
+   
+    if (currentModelIndex != -1){
+        scene.remove(model)
+    }
+
+    currentModelIndex = modelIndex;
+
+    model = models[modelIndex]
+    model.position.set(0, 0, 0)
+    model.rotateY(-.2)
+
+    scene.add(model)
+ 
+    isModelRunning = true;
+    render();
+    // animate();
+}
+
+var animationId;
 function animate(){ 
-    requestAnimationFrame(animate);
+    if(isModelRunning){
+        animationId = requestAnimationFrame(animate);
+    }
+    else{
+        cancelAnimationFrame(animationId);
+        console.log("cancel animation frame")
+    }
+    
     orbit.update();
     render();
 }
@@ -89,4 +110,9 @@ function render(){
     renderer.render( scene, camera);
 }
 
-export {setupScene}
+function hideModel_(){
+    isModelRunning = false;    
+    scene.remove( model );
+}
+
+export {setupScene, showModel_, hideModel_, importModels}

@@ -5,7 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <script src="scripts/jquery-3.1.1.min.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="styles/semantic-ui/semantic.min.css">
+    <link rel="stylesheet" type="text/css" href="styles/semantic-ui/dropdown.min.css">
+
     <link rel="stylesheet" href="style.css" />
+    </script>
+
     <script id="vertexShader" type="x-shader/x-vertex">
         uniform vec3 viewVector;
         uniform float c;
@@ -31,7 +38,6 @@
         </script>
 
     <script>
-
         function setupActionListeners() {
             // Get the modal
             var modal = document.getElementById("myModal");
@@ -59,9 +65,7 @@
                 }
             }
         }
-
     </script>
-
 
 </head>
 
@@ -70,36 +74,54 @@
     <div id="view-3d">
 
     </div>
-    <script src="app_bundle_3d.js"></script>
 
     <div id="toolbar">
-        <button id="myBtn">Open Modal</button>    
+        <!-- <button id="myBtn" class="small ui brown basic button">Open Modal</button> -->
+        <button id="myBtn" class="tiny ui icon grey basic button">
+            <i class="info  icon"></i>
+        </button>
+
+        <button id="btn-play-pause" class="tiny ui icon grey basic button">
+            <i id="btn-play-pause-icon" class="pause icon"></i>
+        </button>
+
     </div>
-    
+
+
     <!-- The Modal -->
     <div id="myModal" class="modal">
 
         <!-- Modal content -->
         <div class="modal-content">
+
             <div class="modal-header">
                 <span class="close">&times;</span>
-                <div id="model-header"></div>
+                <div id="model-types-dropdown" class="ui inline dropdown">
+                    <div class="text">လေယာဉ်</div>
+                    <i class="dropdown icon"></i>
+                    <div class="menu">
+                        <div class="item active">လေယာဉ်</div>
+                        <div class="item">ဂြိုလ်တု</div>
+                        <div class="item">ကြယ်တံခွန်</div>
+                    </div>
+                </div>
             </div>
             <div class="modal-body">
-                <div id="model-image-panel">
+                <div id="model-header"></div>
+                <div id="model-image-panel"></div>
+                <div id="model-credit"></div>
+                <div id="model-description"></div>
 
-                </div>
-                <div id="model-description">Some text in the Modal Body</div>
-                
             </div>
-            <div class="modal-footer">
-                <h3>Modal Footer</h3>
-            </div>
+
         </div>
 
     </div>
-
+    <script src="app_bundle_3d.js"></script>
+    <script src="scripts/semantic-ui/semantic.min.js"></script>
+    <script src="scripts/semantic-ui/dropdown.min.js"></script>
     <script src="scripts/ui.js"></script>
+
 </body>
 
 </html>
